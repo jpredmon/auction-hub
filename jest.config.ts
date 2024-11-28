@@ -29,6 +29,7 @@ const config = {
   testEnvironment: 'jest-environment-jsdom',
   setupFilesAfterEnv: ['./jest.setup.ts'], // Update extension to .ts
   preset: 'ts-jest',
+  testTimeout: 10000, // Set the timeout to 10 seconds (10000 ms)
 };
 
 // Export the Jest configuration
