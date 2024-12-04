@@ -24,6 +24,25 @@ const App: React.FC = () => {
     }
   }, [isLoggedIn]);
 
+  const handleLogin = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // This allows cookies to be included
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIsLoggedIn(true);
+      } else {
+        alert('Login failed');
+      }
+    } catch (error) {
+      console.error('Error logging in:', error);
+    }
+  };
+
   const fetchItems = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/items');
@@ -36,16 +55,18 @@ const App: React.FC = () => {
 
   const handleBid = async (id: number) => {
     try {
-      console.log("Sending bid request for item ID:", id); // Log the ID
-    console.log("Bid value:", bid); // Log the bid value
+      //console.log("Sending bid request for item ID:", id); // Log the ID
+    //console.log("Bid value:", bid); // Log the bid value
       const response = await fetch('http://localhost:5000/api/bid', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ id, bid }),
         credentials: 'include',
       });
-      console.log("Response status:", response.status); // Log the response status
-      console.log("Response headers:", response.headers); // Log headers
+      //console.log("Response status:", response.status); // Log the response status
+      //console.log("Response headers:", response.headers); // Log headers
       
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
@@ -59,24 +80,6 @@ const App: React.FC = () => {
       );
     } catch (error) {
       console.error('Error submitting bid:', error);
-    }
-  };
-
-  const handleLogin = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setIsLoggedIn(true);
-      } else {
-        alert('Login failed');
-      }
-    } catch (error) {
-      console.error('Error logging in:', error);
     }
   };
 

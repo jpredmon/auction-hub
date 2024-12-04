@@ -13,44 +13,12 @@ const App = () => {
             fetchItems();
         }
     }, [isLoggedIn]);
-    const fetchItems = async () => {
-        try {
-            const response = await fetch('http://localhost:5000/api/items');
-            const data = await response.json();
-            setItems(data);
-        }
-        catch (error) {
-            console.error('Error fetching items:', error);
-        }
-    };
-    const handleBid = async (id) => {
-        try {
-            console.log("Sending bid request for item ID:", id); // Log the ID
-            console.log("Bid value:", bid); // Log the bid value
-            const response = await fetch('http://localhost:5000/api/bid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, bid }),
-                credentials: 'include',
-            });
-            console.log("Response status:", response.status); // Log the response status
-            console.log("Response headers:", response.headers); // Log headers
-            if (!response.ok) {
-                throw new Error(`Request failed with status ${response.status}`);
-            }
-            const data = await response.json();
-            console.log(data);
-            setItems((prev) => prev.map((item) => item.id === id ? Object.assign(Object.assign({}, item), { highestBid: data.item.highestBid }) : item));
-        }
-        catch (error) {
-            console.error('Error submitting bid:', error);
-        }
-    };
     const handleLogin = async () => {
         try {
             const response = await fetch('http://localhost:5000/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ username, password }),
             });
             const data = await response.json();
@@ -63,6 +31,41 @@ const App = () => {
         }
         catch (error) {
             console.error('Error logging in:', error);
+        }
+    };
+    const fetchItems = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/items');
+            const data = await response.json();
+            setItems(data);
+        }
+        catch (error) {
+            console.error('Error fetching items:', error);
+        }
+    };
+    const handleBid = async (id) => {
+        try {
+            //console.log("Sending bid request for item ID:", id); // Log the ID
+            //console.log("Bid value:", bid); // Log the bid value
+            const response = await fetch('http://localhost:5000/api/bid', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id, bid }),
+                credentials: 'include',
+            });
+            //console.log("Response status:", response.status); // Log the response status
+            //console.log("Response headers:", response.headers); // Log headers
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+            const data = await response.json();
+            console.log(data);
+            setItems((prev) => prev.map((item) => item.id === id ? Object.assign(Object.assign({}, item), { highestBid: data.item.highestBid }) : item));
+        }
+        catch (error) {
+            console.error('Error submitting bid:', error);
         }
     };
     return (<Container>
