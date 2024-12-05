@@ -5,6 +5,7 @@ import passport from './auth/passport.js';
 import sequelize from './config/database.js';
 import bcrypt from 'bcrypt';
 import User, { UserRole } from './models/User.js';
+import Item from './models/Item.js';
 import { authorize } from './middleware/authorize.js';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -60,8 +61,29 @@ sequelize.sync({ force: false }).then(() => {
       } else {
         console.log('Bidder1 user already exists, skipping creation.');
       }
+
+      // Seed Items
+    const existingItem1 = await Item.findOne({ where: { name: 'John Deere 6230 Tractor' } });
+    if (!existingItem1) {
+      await Item.create({
+        name: 'John Deere 6230 Tractor',
+        description: '4 Cylinder Diesel.',
+        highestBid: 28000,
+      });
+      console.log('Item: John Deere 6230 Tractor created.');
+    }
+
+    const existingItem2 = await Item.findOne({ where: { name: '1990 GMC 7000 digger derrick truck' } });
+    if (!existingItem2) {
+      await Item.create({
+        name: '1990 GMC 7000 digger derrick truck',
+        description: '8 Cylinder Diesel.',
+        highestBid: 4100,
+      });
+      console.log('Item: 1990 GMC 7000 digger derrick truck created.');
+    }
   
-      console.log('Users seeded.');
+      console.log('DB seeded.');
     } catch (error) {
       console.error('Error while seeding database:', error);
     }
@@ -108,48 +130,16 @@ app.use(passport.session());
 //app.enable('trust proxy');
 
 // Sample data 
-let items = [
-  { id: 1, name: 'John Deere 6230 Tractor', description: '4 Cylinder Diesel.', highestBid: 28000 },
-  { id: 2, name: '1990 GMC 7000 digger derrick truck', description: '8 Cylinder Diesel.', highestBid: 4100 },
-];
+// let items = [
+//   { id: 1, name: 'John Deere 6230 Tractor', description: '4 Cylinder Diesel.', highestBid: 28000 },
+//   { id: 2, name: '1990 GMC 7000 digger derrick truck', description: '8 Cylinder Diesel.', highestBid: 4100 },
+// ];
 
 app.get('/', (req, res) => {
   res.send('Welcome to the server!');
 });
 // API Routes
-// app.post('/login', async (req, res, next) => {
-//   const { username, password } = req.body;
 
-//   try {
-//     Find the user by username
-//     const user = await User.findOne({ where: { username } });
-
-//     if (!user || !password) {
-//       return res.status(401).json({ success: false, message: 'Invalid username or password.' });
-//     }
-
-//     Check if the password matches
-//     const isPasswordValid = await bcrypt.compare(password, user.password);
-
-//     if (!isPasswordValid) {
-//       return res.status(401).json({ success: false, message: 'Invalid username or password.' });
-//     }
-
-//     Use Passport's `req.login()` to bind the user to the session
-//     req.login(user, (err) => {
-//       if (err) {
-//         console.error('Login error:', err);
-//         return next(err); // Handle error
-//       }
-
-//       Login successful, return success response
-//       return res.status(200).json({ success: true, message: 'Logged in successfully.' });
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ success: false, message: 'An error occurred during login.' });
-//   }
-// });
 
 // Use passport.authenticate('local') to handle login
 app.post('/login', passport.authenticate('local'), (req, res) => {
@@ -162,18 +152,22 @@ app.post('/login', passport.authenticate('local'), (req, res) => {
   res.status(200).json({ success: true, message: 'Logged in successfully.' });
 });
 
-app.use((req, res, next) => {
-  console.log('Line 165 Cookies:', req.cookies); // You may need to use a cookie-parser middleware
-  next();
-});
-
+// app.use((req, res, next) => {
+//   console.log('Line 165 Cookies:', req.cookies); // You may need to use a cookie-parser middleware
+//   next();
+// });
 
 // Public Route: Fetch items
-app.get('/api/items', (req, res) => {
-  //res.set('Access-Control-Allow-Origin', 'http://localhost:3000'); // Allow specific origin
-  //res.set('Access-Control-Allow-Credentials', 'true'); // Allow cookies
-  res.json(items);
+app.get('/api/items', async (req, res) => {
+  try {
+    const items = await Item.findAll(); // Fetch all items from the database
+    res.json(items);
+  } catch (err) {
+    console.error('Error fetching items:', err);
+    res.status(500).json({ success: false, message: 'Error fetching items.' });
+  }
 });
+
 
 app.get('/test-auth', authorize(UserRole.BIDDER), (req, res) => {
   res.json({ success: true, message: 'User authorized!', user: req.user });
@@ -183,73 +177,86 @@ app.get('/check-cookies', (req, res) => {
   res.json({ cookies: req.cookies });
 });
 
-
-
 // Handle POST requests to the /api/bid endpoint
+
 // Protected Route: Place a bid (requires authentication and bidder role)
-app.post('/api/bid', 
-  (req, res, next) => {
-    // console.log('Before Passport session authentication');
-    // console.log("Authenticated user: ", req.user); // Log the authenticated user
-    // console.log("Session after login: ", req.session);  // Log the full session object
-    next(); // Continue to the next middleware
-  },
+app.post('/api/bid',
   passport.authenticate('session'),
-  (req, res, next) => {
-    //console.log('After Passport session authentication');
-    //console.log("Authenticated user: ", req.user); // Log the authenticated user
-    //console.log("Session after login: ", req.session);  // Log the full session object
-    next(); // Continue to the next middleware
-  },
-  authorize(UserRole.BIDDER), // Allow only users with the "BIDDER" role
-  (req, res) => {
-  // Extract `id` and `bid` values from the request body
-  // The client sends these values when making a bid
-  //console.log("Authenticated user: ", req.user); // Log the authenticated user
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: 'Unauthorized. Please log in.' });
+  authorize(UserRole.BIDDER),
+  async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized. Please log in.' });
+    }
+
+    const { id, bid } = req.body;
+
+    try {
+      const item = await Item.findByPk(id); // Find item by primary key (id)
+      if (!item) {
+        return res.status(404).json({ success: false, message: 'Item not found.' });
+      }
+
+      if (bid > item.highestBid) {
+        item.highestBid = bid; // Update the highest bid
+        await item.save(); // Save the updated item
+
+        res.status(200).json({ success: true, item });
+      } else {
+        res.status(400).json({ success: false, message: 'Invalid bid.' });
+      }
+    } catch (err) {
+      console.error('Error placing bid:', err);
+      res.status(500).json({ success: false, message: 'Error placing bid.' });
+    }
   }
-
-  //console.log("Request body: ", req.body); // Log the request body
- 
-  const { id, bid } = req.body;
-
-  // Find the item in the `items` array that matches the provided `id`
-  // `items` is assumed to be a pre-existing array of auction items
-  const item = items.find((item) => item.id === id);
-  //console.log(item, bid);
-  // Check if the item exists and if the submitted bid is higher than the current highest bid
-  if (item && bid > item.highestBid) {
-    // If both conditions are true:
-    // Update the item's `highestBid` property with the new bid
-    item.highestBid = bid;
-
-    // Respond with a status code of 200 (success)
-    // Include a success message and the updated item in the response
-    res.status(200).json({ success: true, item });
-  } else {
-    // If the item is not found or the bid is not higher than the current highest bid:
-    // Respond with a status code of 400 (bad request)
-    // Include an error message in the response
-    res.status(400).json({ success: false, message: 'Invalid bid.' });
-  }
-});
+);
 
 // Admin-only Route: Manage auction items
 app.post(
   '/api/items',
   passport.authenticate('session'),
   authorize(UserRole.ADMIN), // Allow only users with the "ADMIN" role
-  (req, res) => {
-    console.log("Authenticated user: ", req.user); // Log the authenticated user
+  async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized. Please log in.' });
     }
-    console.log("Request body: ", req.body); // Log the request body
+
     const { name, description, highestBid } = req.body;
-    const newItem = { id: items.length + 1, name, description, highestBid };
-    items.push(newItem);
-    res.status(201).json({ success: true, item: newItem });
+
+    try {
+      const newItem = await Item.create({ name, description, highestBid });
+      res.status(201).json({ success: true, item: newItem });
+    } catch (err) {
+      console.error('Error creating item:', err);
+      res.status(500).json({ success: false, message: 'Error creating item.' });
+    }
+  }
+);
+
+// Admin-only Route: Delete an auction item
+app.delete(
+  '/api/items/:id', // Use a URL parameter to specify the item ID
+  passport.authenticate('session'),
+  authorize(UserRole.ADMIN), // Only admins can delete items
+  async (req, res) => {
+    // Get the item ID from the request parameters
+    const { id } = req.params;
+
+    // Find the item in the database
+    const item = await Item.findByPk(id); // Replace with your Sequelize model if needed
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: 'Item not found.' });
+    }
+
+    try {
+      // Delete the item from the database
+      await item.destroy();
+      return res.status(200).json({ success: true, message: 'Item deleted successfully.' });
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      return res.status(500).json({ success: false, message: 'Error deleting item.' });
+    }
   }
 );
 
