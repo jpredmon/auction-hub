@@ -126,10 +126,10 @@ const App = () => {
     };
     return (<Container>
       {!isLoggedIn ? (<Card>
-          <CardContent>
-            <Typography variant="h5">Login</Typography>
-            <TextField label="Username" value={username} onChange={(e) => setUsername(e.target.value)} fullWidth/>
-            <TextField type="password" label="Password" value={password} onChange={(e) => setPassword(e.target.value)} fullWidth/>
+          <CardContent>            
+              <Typography variant="h5" sx={{ mb: 1 }}>Login</Typography>
+            <TextField label="Username" value={username} onChange={(e) => setUsername(e.target.value)} fullWidth sx={{ mb: 1 }}/>
+            <TextField type="password" label="Password" value={password} onChange={(e) => setPassword(e.target.value)} fullWidth sx={{ mb: 1 }}/>
             <Button variant="contained" onClick={handleLogin}>
               Login
             </Button>
@@ -154,7 +154,7 @@ const App = () => {
               <CardContent>
                 <Typography variant="h5">{item.name}</Typography>
                 <Typography>{item.description}</Typography>
-                <Typography>Highest Bid: ${item.highestBid}</Typography>
+                <Typography sx={{ mb: 1 }}>Highest Bid: ${item.highestBid}</Typography>
                 {/* Conditionally render the admin functionality for delete*/}
                 {username === "admin" && (<IconButton onClick={() => handleDelete(item.id)} style={{
                         position: "absolute",
@@ -167,7 +167,7 @@ const App = () => {
                  {username === "bidder1" && (<><TextField type="number" label="Your Bid" value={selectedItem === item.id ? bid : ""} onChange={(e) => {
                         setBid(Number(e.target.value));
                         setSelectedItem(item.id);
-                    }}/><Button variant="contained" onClick={() => handleBid(item.id)}>
+                    }} sx={{ mr: 1 }}/><Button variant="contained" onClick={() => handleBid(item.id)}>
                       Submit Bid
                     </Button></>)}
               </CardContent>

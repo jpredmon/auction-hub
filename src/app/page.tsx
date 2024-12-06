@@ -199,8 +199,8 @@ const App: React.FC = () => {
                 <TextField
                   label="Highest Bid"
                   type="number"
-                  value={newItemHighestBid}
-                  onChange={(e) => setNewItemHighestBid(Number(e.target.value))}
+                  value={newItemHighestBid === 0 ? "" : newItemHighestBid}
+                  onChange={(e) => setNewItemHighestBid(Number(e.target.value) || 0)}
                   fullWidth
                   sx={{ mb: 1 }}
                 />
